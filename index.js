@@ -103,10 +103,11 @@ app.get("/insertArticle", (req, res) => {
 const query = require("./config/query");
 // 获取文章列表接口
 app.get("/getlist", async (req, res, next) => {
-  const r = await query(`select content from test.article;`);
-  console.log(r, "rrrr");
+  const r = await query(`select * from test.article;`);
+  // console.log(r, "rrrr");
   res.send(r);
 });
+
 // 提交文章接口
 app.post("/insertArticle", async (req, res, next) => {
   let { editorData, category_id, article_title } = req.body;
@@ -124,6 +125,12 @@ app.post("/insertArticle", async (req, res, next) => {
   } else {
     res.send({ status: 0, message: "提交文章失败！" });
   }
+});
+// 获取最新评论列表
+app.get("/getfreshCommentList", async (req, res, next) => {
+  const r = await query(`select * from test.comment;`);
+  // console.log(r, "rrrr");
+  res.send(r);
 });
 // -------------错误处理----------------------
 // 错误及404处理，放在最底部兜底
