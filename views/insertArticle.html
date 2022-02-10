@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="card">
+      <div class="card-body">
+        <h3 class="title">欢迎进入后台管理页面</h3>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="inputGroupSelect01"
+              >文章分类</label
+            >
+          </div>
+          <select class="custom-select" id="inputGroupSelect01">
+            <option value="1">JavaScript</option>
+            <option value="2">Nodejs</option>
+            <option value="3">React</option>
+            <option value="4">Linux</option>
+            <option value="5">Mysql</option>
+            <option value="6">日常</option>
+          </select>
+        </div>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="basic-addon1">文章标题</span>
+          </div>
+          <input
+            type="text"
+            class="form-control"
+            id="article_title"
+            placeholder="请输入标题"
+            aria-label="Username"
+            aria-describedby="basic-addon1"
+          />
+        </div>
+        <div id="editor" style="display: none"></div>
+        <button type="button" id="submit" class="btn btn-info">提交</button>
+      </div>
+    </div>
+    <link rel="stylesheet" href="./css/bootstrap.min.css" />
+    <link rel="stylesheet" href="./css/insertArticle.css" />
+    <script src="./js/jquery-3.6.0.min.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./lib/ckeditor5-32.0.0-6n1slnhv87v9/build/ckeditor.js"></script>
+    <script>
+      $(document).ready(function () {
+        // 初始化ckeditor编辑器
+        ClassicEditor.create(document.querySelector("#editor"), {
+          ckfinder: {
+            uploadUrl: "/uploadImg",
+          },
+        })
+          .then((editor) => {
+            window.editor = editor;
+            // 初始化编辑器中的数据(如果有的话)
+            window.editor.setData("");
+          })
+          .catch((error) => {
+            console.error(
+              "There was a problem initializing the editor.",
+              error
+            );
+          });
+        // 绑定提交事件
+        document.getElementById("submit").addEventListener("click", () => {
+          // 获得编辑器中的数据
+          const editorData = window.editor.getData();
+          const category_id = $("#inputGroupSelect01").val();
+          const article_title = $("#article_title").val();
+          if (editorData && category_id && article_title) {
+            $.ajax({
+              type: "POST",
+              url: "/insertArticle",
+              data: {
+                editorData,
+                category_id,
+                article_title,
+              },
+              success: function (data) {
+                console.log(data, "data");
+                if (data.status === 1) {
+                  window.location.reload();
+                }
+              },
+            });
+          } else {
+            alert("有空值！");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
