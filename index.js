@@ -103,7 +103,21 @@ app.get("/insertArticle", (req, res) => {
 const query = require("./config/query");
 // 获取文章列表接口
 app.get("/getlist", async (req, res, next) => {
-  const r = await query(`select * from test.article;`);
+  // 查文章
+  const r = await query(`select * from article;`);
+  // 并发查询对应的文章分类和评论列表
+  await Promise.all(
+    r.map(async (item) => {
+      let data = await query(
+        `select category_name from category where category_id=${item.category_id};`
+      );
+      let data2 = await query(
+        `select * from blog_comment where article_id=${item.article_id};`
+      );
+      item.commentList = data2;
+      item.category_name = data[0].category_name;
+    })
+  );
   // console.log(r, "rrrr");
   res.send(r);
 });
@@ -128,7 +142,10 @@ app.post("/insertArticle", async (req, res, next) => {
 });
 // 获取最新评论列表
 app.get("/getfreshCommentList", async (req, res, next) => {
-  const r = await query(`select * from test.comment;`);
+  // 左连接查询评论表和文章表
+  const r = await query(
+    `select user_id,category_id,blog_comment_update_time,blog_comment_pid,blog_comment_id,blog_comment_create_time,blog_comment_content,article_title,article.article_id from blog_comment left join article on blog_comment.article_id=article.article_id ORDER BY blog_comment_update_time DESC;`
+  );
   // console.log(r, "rrrr");
   res.send(r);
 });
