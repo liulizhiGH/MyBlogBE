@@ -61,7 +61,7 @@ let upload = multer({
   }),
 });
 app.post("/uploadImg", upload.single("upload"), (req, res, next) => {
-  console.log(req.file, "file");
+  // console.log(req.file, "file");
   const { originalname } = req.file;
   const result = {
     fileName: originalname,
@@ -101,28 +101,7 @@ app.get("/insertArticle", (req, res) => {
 // app.use("/log", LoginAndLogout);
 // ---------------restful接口------------------------
 const query = require("./config/query");
-// 获取文章列表接口
-app.get("/getlist", async (req, res, next) => {
-  // 查文章
-  const r = await query(`select * from article;`);
-  // 并发查询对应的文章分类和评论列表
-  await Promise.all(
-    r.map(async (item) => {
-      let data = await query(
-        `select category_name from category where category_id=${item.category_id};`
-      );
-      let data2 = await query(
-        `select * from blog_comment where article_id=${item.article_id};`
-      );
-      item.commentList = data2;
-      item.category_name = data[0].category_name;
-    })
-  );
-  // console.log(r, "rrrr");
-  res.send(r);
-});
-
-// 提交文章接口
+// 提交文章
 app.post("/insertArticle", async (req, res, next) => {
   let { editorData, category_id, article_title } = req.body;
   // 把从富文本中获取的内容的单引号转义成实体字符，防止mysql报错
@@ -140,7 +119,48 @@ app.post("/insertArticle", async (req, res, next) => {
     res.send({ status: 0, message: "提交文章失败！" });
   }
 });
-// 获取最新评论列表
+// 获取文章分类
+app.get("/getArticleCategory", async (req, res, next) => {
+  const r = await query(`select * from category;`);
+  // console.log(r, "rrrr");
+  res.send(r);
+});
+// 获取文章列表
+app.post("/getArticleList", async (req, res, next) => {
+  console.log(req.body);
+  // 查文章
+  let r;
+  if (req.body.category_id) {
+    // 根据分类查
+    r = await query(
+      `select * from article where category_id=${req.body.category_id};`
+    );
+  } else if (req.body.article_id) {
+    // 根据id查
+    r = await query(
+      `select * from article where article_id=${req.body.article_id};`
+    );
+  } else {
+    // 全查
+    r = await query(`select * from article;`);
+  }
+  // 并发查询对应的文章分类和评论列表
+  await Promise.all(
+    r.map(async (item) => {
+      let data = await query(
+        `select category_name from category where category_id=${item.category_id};`
+      );
+      let data2 = await query(
+        `select * from blog_comment where article_id=${item.article_id};`
+      );
+      item.commentList = data2;
+      item.category_name = data[0].category_name;
+    })
+  );
+  // console.log(r, "rrrr");
+  res.send(r);
+});
+// 获取评论列表
 app.get("/getfreshCommentList", async (req, res, next) => {
   // 左连接查询评论表和文章表
   const r = await query(
