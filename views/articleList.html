@@ -1,12 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-<body>
-  liebiaoye
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>列表页</title>
+    <link rel="stylesheet" href="./css/bootstrap.min.css" />
+    <link rel="stylesheet" href="./css/articleList.css" />
+  </head>
+  <body>
+    <button
+      type="button"
+      onclick="location='/insertArticle'"
+      class="btn btn-info"
+    >
+      返回录入页
+    </button>
+    <h3 class="title">全部文章列表</h3>
+    <ul class="list-group" id="ArticleList"></ul>
+    <script src="./js/jquery-3.6.0.min.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        // 查询列表
+        let ArticleList = [];
+        // 拼接文章列表dom结构
+        let ulDom = document.getElementById("ArticleList");
+        $.ajax({
+          type: "POST",
+          url: "/getArticleList",
+          data: {},
+          success: function (data) {
+            ArticleList = data || [];
+            console.log(data, "ArticleList");
+            let html = "";
+            ArticleList.forEach((item) => {
+              let li = `<li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            ${item.article_title}
+            <div class="operationGroup">
+              ${
+                item.article_delflag === 0
+                  ? `<span class="badge badge-danger" data-aid="${item.article_id}" data-delflag="1">点击删除</span>`
+                  : `<span class="badge badge-success" data-aid="${item.article_id}" data-delflag="0">点击启用</span>`
+              }
+              <a href="/edit?aid=${
+                item.article_id
+              }" class="badge badge-info">编辑</a>
+            </div>
+          </li>`;
+              html += li;
+            });
+            ulDom.innerHTML = html;
+            // console.info(ulDom, "ulDom");
+            $("#ArticleList li span.badge").click((e) => {
+              let article_id = $(e.target).attr("data-aid");
+              let article_delflag = $(e.target).attr("data-delflag");
+              // 启用、删除文章
+              $.ajax({
+                type: "POST",
+                url: "/delArticle",
+                data: {
+                  article_id,
+                  article_delflag,
+                },
+                success: function (data) {
+                  if (data.status === 1) {
+                    window.location.reload();
+                  } else {
+                    alert("更新失败");
+                  }
+                },
+              });
+            });
+          },
+        });
+      });
+    </script>
+  </body>
 </html>

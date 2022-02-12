@@ -1,0 +1,15 @@
+body {
+  padding: 30px;
+  margin: 0 auto;
+  width: 85%;
+  max-width: 1260px;
+}
+.title{
+  margin: 20px 0;
+}
+.operationGroup{
+  font-size: 24px;
+}
+.operationGroup span{
+  cursor: pointer;
+}

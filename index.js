@@ -87,6 +87,10 @@ app.set("view engine", "html");
 app.get("/articleList", (req, res) => {
   res.render("articleList");
 });
+// 前端编辑文章页面
+app.get("/edit", (req, res) => {
+  res.render("edit");
+});
 // 前端提交文章页面
 app.get("/insertArticle", (req, res) => {
   res.render("insertArticle");
@@ -104,47 +108,61 @@ const query = require("./config/query");
 // 提交文章
 app.post("/insertArticle", async (req, res, next) => {
   let { editorData, category_id, article_title } = req.body;
-  // 把从富文本中获取的内容的单引号转义成实体字符，防止mysql报错
+  // 注意：把从富文本中获取的内容的单引号转义成实体字符，防止mysql报错
   editorData = editorData.replace(/\'/g, "&#39;");
   // console.log(category_id, "category_id");
   // console.log(article_title, "article_title");
   // console.log(editorData, "editorData");
   const r = await query(
-    `insert into article (content,category_id,title) values('${editorData}',${category_id},'${article_title}');`
+    `insert into article (article_content,category_id,article_title) values('${editorData}',${category_id},'${article_title}');`
   );
-  // console.log(r, "rrrr");
+  // console.log(r, "insert");
   if (r.affectedRows === 1) {
     res.send({ status: 1, message: "提交文章成功！" });
   } else {
     res.send({ status: 0, message: "提交文章失败！" });
   }
 });
+// 逻辑删除文章
+app.post("/delArticle", async (req, res, next) => {
+  let { article_id, article_delflag } = req.body;
+  // console.log(req.body)
+  const r = await query(
+    `update article set article_delflag=${article_delflag} where article_id=${article_id};`
+  );
+  // const r = await query(`DELETE FROM article WHERE article_id=${article_id}';`);
+  // console.log(r, "update");
+  if (r.affectedRows === 1) {
+    res.send({ status: 1, message: "删除文章成功！" });
+  } else {
+    res.send({ status: 0, message: "删除文章失败！" });
+  }
+});
 // 获取文章分类
 app.get("/getArticleCategory", async (req, res, next) => {
   const r = await query(`select * from category;`);
-  // console.log(r, "rrrr");
+  // console.log(r, "select");
   res.send(r);
 });
 // 获取文章列表
 app.post("/getArticleList", async (req, res, next) => {
-  console.log(req.body);
-  // 查文章
+  // 先查文章
   let r;
   if (req.body.category_id) {
     // 根据分类查
     r = await query(
-      `select * from article where category_id=${req.body.category_id};`
+      `select * from article where article_delflag=0 and category_id=${req.body.category_id};`
     );
   } else if (req.body.article_id) {
     // 根据id查
     r = await query(
-      `select * from article where article_id=${req.body.article_id};`
+      `select * from article where article_delflag=0 and article_id=${req.body.article_id};`
     );
   } else {
     // 全查
     r = await query(`select * from article;`);
   }
-  // 并发查询对应的文章分类和评论列表
+  // 然后并发查询对应文章的文章分类和评论列表
   await Promise.all(
     r.map(async (item) => {
       let data = await query(
@@ -157,7 +175,7 @@ app.post("/getArticleList", async (req, res, next) => {
       item.category_name = data[0].category_name;
     })
   );
-  // console.log(r, "rrrr");
+  // console.log(r, "select");
   res.send(r);
 });
 // 获取评论列表
@@ -166,7 +184,7 @@ app.get("/getfreshCommentList", async (req, res, next) => {
   const r = await query(
     `select user_id,category_id,blog_comment_update_time,blog_comment_pid,blog_comment_id,blog_comment_create_time,blog_comment_content,article_title,article.article_id from blog_comment left join article on blog_comment.article_id=article.article_id ORDER BY blog_comment_update_time DESC;`
   );
-  // console.log(r, "rrrr");
+  // console.log(r, "select");
   res.send(r);
 });
 // -------------错误处理----------------------
