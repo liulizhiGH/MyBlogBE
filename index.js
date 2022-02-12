@@ -151,16 +151,16 @@ app.post("/getArticleList", async (req, res, next) => {
   if (req.body.category_id) {
     // 根据分类查
     r = await query(
-      `select * from article where article_delflag=0 and category_id=${req.body.category_id};`
+      `select * from article where article_delflag=0 and category_id=${req.body.category_id} ORDER BY article_update_time DESC;`
     );
   } else if (req.body.article_id) {
     // 根据id查
     r = await query(
-      `select * from article where article_delflag=0 and article_id=${req.body.article_id};`
+      `select * from article where article_delflag=0 and article_id=${req.body.article_id} ORDER BY article_update_time DESC;`
     );
   } else {
     // 全查
-    r = await query(`select * from article;`);
+    r = await query(`select * from article ORDER BY article_update_time DESC;`);
   }
   // 然后并发查询对应文章的文章分类和评论列表
   await Promise.all(
