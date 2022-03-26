@@ -26,8 +26,7 @@ app.all("*", (req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
   }
   // 禁止浏览器缓存响应
-  res.header("cache-control", "no-cache");
-  res.header("pragma", "no-cache");
+  res.header("cache-control", "max-age=31536000");
   // 接受任何方式的请求
   res.header("Access-Control-Allow-Methods", "*");
   // 允许请求头中携带xx字段
