@@ -12,7 +12,12 @@ app.listen(process.env.APP_PORT, () => {
   );
 });
 // 允许跨域的白名单
-const allowDomains = ["http://localhost:3000", "http://localhost:5000"];
+const allowDomains = [
+  "http://localhost:3000",
+  "http://localhost:5000",
+  "http://workonsth.com:5000",
+  "http://www.workonsth.com:5000",
+];
 app.all("*", (req, res, next) => {
   // 动态设置，支持多域名跨域访问服务器资源
   const allowDomain = req.get("origin");
