@@ -7,13 +7,17 @@ const app = express();
 const uploader = require("./middleware/uploader");
 const logger = require("./middleware/logger");
 const redisSession = require("./middleware/session");
+const createError = require("http-errors");
+const query = require("./utils/query");
 
+// 设置静态资源文件路径
+app.use(express.static(path.resolve(__dirname, "./public")));
+app.use(express.static(path.resolve(__dirname, "./uploads")));
 // 处理跨域
 app.use((req, res, next) => {
-  console.log(`经过app.all,${req.method},${req.path},${Date.now()}`);
+  console.log(`${req.method}, ${req.path}, ${Date.now()}`);
   // 动态设置，支持多域名跨域访问服务器资源
   const reqOrigin = req.get("origin");
-  console.log(reqOrigin, "123456");
   if (process.env.ALLOW_DOMAINS.includes(reqOrigin)) {
     // 想要跨域时携带cookie（前后端都要配置Credentials参数为true，后端为true时，Access-Control-Allow-Origin必须指定某个具体域，不可以是*）
     res.header("Access-Control-Allow-Credentials", true);
@@ -35,45 +39,38 @@ app.use((req, res, next) => {
   // 交给下一个中间件处理程序
   next();
 });
-// 设置静态资源文件路径
-app.use(express.static(path.resolve(__dirname, "./public")));
-app.use(express.static(path.resolve(__dirname, "./uploads")));
 // 日志
 app.use(logger);
 // session
 app.use(redisSession);
 // 模板引擎
 app.set("views", path.resolve(__dirname, "./views"));
-app.engine(".html", require("ejs").__express);
-app.set("view engine", ".html");
+app.engine(".ejs", require("ejs").__express);
+app.set("view engine", ".ejs");
 // express.json负责解析请求体中的json数据
 // express.urlencoded负责解析请求体中的类似key = value & key=value的序列化数据
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // true：使用qs解析器，可以递归解析
-
-// 文件上传
-app.post("/uploadImg", uploader.single("upload"), (req, res, next) => {
-  // console.log(req.file, "file");
-  const { originalname } = req.file;
-  const result = {
-    fileName: originalname,
-    uploaded: 1,
-    url: "./" + originalname,
-  };
-  res.json(result);
+// ---------------后台管理页面------------------------
+// 后台管理首页
+app.get("/", (req, res) => {
+  res.redirect("/articleList");
 });
-// 前端查询文章页面
+// 后台管理测试上传文件页面
+app.get("/testUpload", (req, res) => {
+  res.render("testUploadPage");
+});
+// 后台管理查询文章列表页面
 app.get("/articleList", (req, res) => {
-  // 如果render的首个参数，省略了文件后缀，那么会被当作view engine中配置的默认文件类型去查找
-  res.render("articleList.html");
+  res.render("articleListPage");
 });
-// 前端编辑文章页面
+// 后台管理编辑文章页面
 app.get("/edit", (req, res) => {
-  res.render("edit");
+  res.render("editPage");
 });
-// 前端提交文章页面
+// 后台管理提交文章页面
 app.get("/insertArticle", (req, res) => {
-  res.render("insertArticle");
+  res.render("insertArticlePage");
 });
 // 注册路由模块
 // 第一个参数，类似于命名空间，用户请求匹配到相应路径，进入相应的路由模块（或者叫路由中间件，也是三参函数）
@@ -84,7 +81,18 @@ app.get("/insertArticle", (req, res) => {
 // app.use("/sku", sku);
 // app.use("/log", LoginAndLogout);
 // ---------------RESTful接口------------------------
-const query = require("./config/query");
+// 文件上传
+app.post("/uploadImage", uploader.single("myFile"), (req, res) => {
+  // console.log(req.file, "file类数据");
+  // console.log(req.body, "非file类数据");
+  const { originalname } = req.file;
+  const result = {
+    fileName: originalname,
+    uploaded: 1,
+    url: "./" + originalname,
+  };
+  res.json(result);
+});
 // 提交文章
 app.post("/insertArticle", async (req, res, next) => {
   let { editorData, category_id, article_title } = req.body;
@@ -104,7 +112,7 @@ app.post("/insertArticle", async (req, res, next) => {
   }
 });
 // 逻辑删除文章
-app.post("/delArticle", async (req, res, next) => {
+app.post("/delArticle", async (req, res) => {
   let { article_id, article_delflag } = req.body;
   // console.log(req.body)
   // 逻辑删
@@ -121,13 +129,13 @@ app.post("/delArticle", async (req, res, next) => {
   }
 });
 // 获取文章分类
-app.get("/getArticleCategory", async (req, res, next) => {
+app.get("/getArticleCategory", async (req, res) => {
   const r = await query(`select * from category;`);
   // console.log(r, "select");
   res.send(r);
 });
 // 获取文章列表
-app.post("/getArticleList", async (req, res, next) => {
+app.post("/getArticleList", async (req, res) => {
   // 先查文章
   let r;
   if (req.body.category_id) {
@@ -161,7 +169,7 @@ app.post("/getArticleList", async (req, res, next) => {
   res.send(r);
 });
 // 获取评论列表
-app.get("/getfreshCommentList", async (req, res, next) => {
+app.get("/getfreshCommentList", async (req, res) => {
   // 左连接查询评论表和文章表
   const r = await query(
     `select user_id,category_id,blog_comment_update_time,blog_comment_pid,blog_comment_id,blog_comment_create_time,blog_comment_content,article_title,article.article_id from blog_comment left join article on blog_comment.article_id=article.article_id ORDER BY blog_comment_update_time DESC;`
@@ -169,21 +177,23 @@ app.get("/getfreshCommentList", async (req, res, next) => {
   // console.log(r, "select");
   res.send(r);
 });
-// 404处理
+// ----------------错误处理------------------------
+// 捕获404并转发到错误处理程序
 app.use((req, res, next) => {
-  res.status(404).send({ error: "404 - Not Found!", path: req.path });
+  next(createError(404));
 });
-// 500处理
+// 错误处理程序
 app.use((err, req, res, next) => {
-  res.status(500).send({
-    error: err,
-    level: `应用级别错误${Date.now()}`,
-    path: req.path,
-  });
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = process.env.ENV === "DEV" ? err : {};
+  // 设置响应码并渲染错误处理页面
+  res.status(err.status || 500);
+  res.render("error");
 });
 // -------------启动web服务------------------
 app.listen(process.env.APP_PORT, () => {
   console.log(
-    `服务已启动，${process.env.APP_PORT}，${new Date().toLocaleString()}`
+    `服务已启动 / ${process.env.APP_PORT} / ${new Date().toLocaleString()}`
   );
 });

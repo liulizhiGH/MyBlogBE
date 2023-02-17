@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <form action="/uploadImage" method="post" enctype="multipart/form-data">
+      <!-- accept:上传的文件类型限制，指定文件选择的类型 name属性的值要对应后端save函数的参数 -->
+      <input type="file" accept="image/*,.text" name="myFile" />
+      <br />
+      <input type="text" name="des" id="" placeholder="文件描述" />
+      <br />
+      <button>单文件上传</button>
+    </form>
+  </body>
+</html>
