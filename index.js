@@ -55,7 +55,14 @@ app.use(express.urlencoded({ extended: true })); // true：使用qs解析器，�
 function isAuth(req, res, next) {
   res.locals.user = null;
   // 不需要鉴权的接口或页面
-  const whiteList = ["/loginPage", "/login", "/logout"];
+  const whiteList = [
+    "/loginPage",
+    "/login",
+    "/logout",
+    "/getArticleCategory",
+    "/getArticleList",
+    "/getfreshCommentList",
+  ];
   if (whiteList.includes(req.path)) {
     next();
     return; // 需要写，不然会执行后面的代码
@@ -68,6 +75,7 @@ function isAuth(req, res, next) {
     res.redirect("/loginPage");
   }
 }
+// 全部都走鉴权中间件
 app.use(isAuth);
 // 登陆页面
 app.get("/loginPage", (req, res) => {
