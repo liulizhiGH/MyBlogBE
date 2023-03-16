@@ -6,7 +6,7 @@ dotenvExpand.expand(config);
 const app = express();
 const uploader = require("./middleware/uploader");
 const logger = require("./middleware/logger");
-const redisSession = require("./middleware/session");
+const session = require("./middleware/session");
 const createError = require("http-errors");
 const query = require("./utils/query");
 
@@ -42,7 +42,7 @@ app.use((req, res, next) => {
 // 日志
 app.use(logger);
 // session
-app.use(redisSession);
+app.use(session);
 // 模板引擎
 app.set("views", path.resolve(__dirname, "./views"));
 app.engine(".ejs", require("ejs").__express);
@@ -51,6 +51,51 @@ app.set("view engine", ".ejs");
 // express.urlencoded负责解析请求体中的类似key = value & key=value的序列化数据
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // true：使用qs解析器，可以递归解析
+// -------------登录/退出/鉴权----------------------------
+function isAuth(req, res, next) {
+  res.locals.user = null;
+  // 不需要鉴权的接口或页面
+  const whiteList = ["/loginPage", "/login", "/logout"];
+  if (whiteList.includes(req.path)) {
+    next();
+    return; // 需要写，不然会执行后面的代码
+  }
+  const { islogin, user } = req.session;
+  if (islogin) {
+    res.locals.user = user;
+    next();
+  } else {
+    res.redirect("/loginPage");
+  }
+}
+app.use(isAuth);
+// 登陆页面
+app.get("/loginPage", (req, res) => {
+  res.render("loginPage");
+});
+// 登录
+app.post("/login", async (req, res) => {
+  const { username, userpassword } = req.body;
+  const sql = `SELECT user_password FROM test.user where user_name='${username}';`;
+  const result = await query(sql);
+  if (result[0]?.user_password === userpassword) {
+    // 登陆成功，录入session
+    req.session.islogin = true;
+    req.session.user = username;
+    // 并回到来源页
+    // TODO 如何携带来源页的path？
+    res.redirect("/");
+  } else {
+    // 继续登录页
+    res.redirect("/loginPage");
+  }
+});
+// 退出
+app.get("/logout", (req, res) => {
+  req.session.islogin = false;
+  req.session.user = null;
+  res.redirect("/loginPage");
+});
 // ---------------后台管理页面------------------------
 // 后台管理首页
 app.get("/", (req, res) => {
@@ -184,7 +229,6 @@ app.use((req, res, next) => {
 });
 // 错误处理程序
 app.use((err, req, res, next) => {
-  // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = process.env.ENV === "DEV" ? err : {};
   // 设置响应码并渲染错误处理页面

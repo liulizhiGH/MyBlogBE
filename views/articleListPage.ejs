@@ -9,13 +9,7 @@
     <link rel="stylesheet" href="./css/articleList.css" />
   </head>
   <body>
-    <button
-      type="button"
-      onclick="location='/insertArticle'"
-      class="btn btn-info"
-    >
-      返回录入页
-    </button>
+    <%- include('./header.ejs') %>
     <h3 class="title">全部文章列表</h3>
     <ul class="list-group" id="ArticleList"></ul>
     <script src="./js/jquery-3.6.0.min.js"></script>

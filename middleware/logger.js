@@ -5,7 +5,6 @@ const FileStreamRotator = require("file-stream-rotator");
 const accessLogStream = FileStreamRotator.getStream({
   filename: path.resolve(__dirname, "../logs/access-%DATE%.log"),
   frequency: "daily", // 频率：每天生成一份
-  verbose: false,
   date_format: "YYYYMMDD",
 });
 
